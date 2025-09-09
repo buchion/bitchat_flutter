@@ -1,6 +1,6 @@
 import 'dart:async';
+import 'package:bitchat_flutter/bitchat_flutter.dart';
 import 'package:flutter/foundation.dart';
-import 'bitchat_network.dart';
 import 'bitchat_message.dart';
 import 'bitchat_peer.dart';
 import 'bluetooth/mesh_network.dart';
@@ -46,7 +46,7 @@ class BitChatClient extends ChangeNotifier {
       _meshNetwork = MeshNetwork();
       await _meshNetwork.initialize();
       
-      _peerDiscovery = PeerDiscovery(_meshNetwork);
+      _peerDiscovery = PeerDiscovery();
       await _peerDiscovery.initialize();
       
       _setupEventListeners();
@@ -89,7 +89,7 @@ class BitChatClient extends ChangeNotifier {
     final message = BitChatMessage(
       id: _generateMessageId(),
       content: content,
-      senderId: _identityManager.currentIdentity.id,
+      senderId: _identityManager.currentIdentity?.id ?? '',
       roomId: roomId ?? 'public',
       timestamp: DateTime.now(),
       type: MessageType.text,
@@ -102,7 +102,7 @@ class BitChatClient extends ChangeNotifier {
   
   /// Emergency wipe - clear all data
   Future<void> emergencyWipe() async {
-    await disconnect();
+    await _meshNetwork.disconnect();
     await _identityManager.clearAllData();
     _messageHistory.clear();
     _peers.clear();

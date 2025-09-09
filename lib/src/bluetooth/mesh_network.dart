@@ -14,8 +14,7 @@ class MeshNetwork {
   final StreamController<BitChatMessage> _messageController = 
       StreamController<BitChatMessage>.broadcast();
   
-  FlutterBluePlus? _flutterBlue;
-  BluetoothDevice? _currentDevice;
+  
   BluetoothCharacteristic? _messageCharacteristic;
   
   bool _isInitialized = false;
@@ -33,15 +32,13 @@ class MeshNetwork {
     try {
       _logger.info(_tag, 'Initializing mesh network...');
       
-      _flutterBlue = FlutterBluePlus.instance;
-      
       // Check if Bluetooth is available
-      if (!await _flutterBlue!.isAvailable) {
+      if (!await FlutterBluePlus.isAvailable) {
         throw Exception('Bluetooth is not available on this device');
       }
       
       // Check if Bluetooth is on
-      if (!await _flutterBlue!.isOn) {
+      if (!await FlutterBluePlus.isOn) {
         throw Exception('Bluetooth is not turned on');
       }
       
@@ -164,14 +161,14 @@ class MeshNetwork {
   
   /// Start scanning for other BitChat devices
   Future<void> _startScanning() async {
-    await _flutterBlue!.startScan(
+    await FlutterBluePlus.startScan(
       timeout: const Duration(seconds: 10),
       androidUsesFineLocation: false,
     );
-    
-    _flutterBlue!.scanResults.listen((results) {
+
+    FlutterBluePlus.scanResults.listen((results) {
       for (final result in results) {
-        if (_isBitChatDevice(result.device)) {
+        if (_isBitChatDevice(result)) {
           _handleDiscoveredDevice(result.device);
         }
       }
@@ -180,13 +177,13 @@ class MeshNetwork {
   
   /// Stop scanning for devices
   Future<void> _stopScanning() async {
-    await _flutterBlue!.stopScan();
+    await FlutterBluePlus.stopScan();
   }
   
   /// Check if a device is a BitChat device
-  bool _isBitChatDevice(BluetoothDevice device) {
+  bool _isBitChatDevice(ScanResult result) {
     // Check if device advertises BitChat service
-    return device.advertisementData.serviceUuids.contains(_serviceUuid);
+    return result.advertisementData.serviceUuids.contains(_serviceUuid);
   }
   
   /// Handle a discovered BitChat device
@@ -213,7 +210,7 @@ class MeshNetwork {
               
               // Listen for incoming messages
               characteristic.value.listen((value) {
-                _handleIncomingMessage(value);
+                _handleIncomingMessage(Uint8List.fromList(value));
               });
               
               break;
